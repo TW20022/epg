@@ -10,23 +10,26 @@ async function run() {
     const date = urlParams.get("date");
 
     if (!ch || !date) {
-        document.body.innerHTML = "Usage: ?ch=频道名&date=日期（如 20260828）";
+        document.body.innerHTML = "Usage: ?ch=频道名&date=YYYYMMDD";
         return;
     }
 
-    try {
-        const epg = await fetch("epg.json").then(r => r.json());
-        const list = epg[ch]?.[date] || [];
+    const epg = await fetch("epg.json").then(r => r.json());
 
-        const output = {
-            name: ch,
-            epg_data: list
-        };
-
-        document.body.innerHTML = "<pre>" + JSON.stringify(output, null, 2) + "</pre>";
-    } catch (e) {
-        document.body.innerHTML = "EPG 数据加载失败：" + e;
+    if (!epg[ch]) {
+        document.body.innerHTML = "频道不存在：" + ch;
+        return;
     }
+
+    const list = epg[ch][date] || [];
+
+    const output = {
+        channel_name: ch,
+        date: date.slice(0,4) + "-" + date.slice(4,6) + "-" + date.slice(6,8),
+        epg_data: list
+    };
+
+    document.body.innerHTML = "<pre>" + JSON.stringify(output, null, 2) + "</pre>";
 }
 run();
 </script>
