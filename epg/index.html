@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>EPG API</title>
+<script>
+async function run() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const ch = urlParams.get("ch");
+    const date = urlParams.get("date");
+
+    if (!ch || !date) {
+        document.body.innerHTML = "Usage: ?ch=频道名&date=日期（如 20260828）";
+        return;
+    }
+
+    try {
+        const epg = await fetch("epg.json").then(r => r.json());
+        const list = epg[ch]?.[date] || [];
+
+        const output = {
+            name: ch,
+            epg_data: list
+        };
+
+        document.body.innerHTML = "<pre>" + JSON.stringify(output, null, 2) + "</pre>";
+    } catch (e) {
+        document.body.innerHTML = "EPG 数据加载失败：" + e;
+    }
+}
+run();
+</script>
+</head>
+<body></body>
+</html>
