@@ -21,7 +21,20 @@ async function run() {
         return;
     }
 
-    const list = epg[ch][date] || [];
+    let list = epg[ch][date] || [];
+
+    // 核心修复逻辑：
+    // 1. 移除第一条 "00:00" 开始的 "精彩呈现"（让它和能正常显示的第一份数据结构保持一致）
+    // 2. 修复跨天时间：若 end 小于等于 start（如 23:35 -> 00:00），将 00:00 改为 24:00 避免解析崩溃
+    list = list.filter(item => !(item.start === "00:00" && item.end === "00:24"));
+
+    list = list.map(item => {
+        if (item.end <= item.start) {
+            // 将跨天的 00:00 修正为 24:00
+            return { ...item, end: "24:00" };
+        }
+        return item;
+    });
 
     const output = {
         channel_name: ch,
