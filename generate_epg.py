@@ -3,40 +3,42 @@ import xmltodict, json, os
 with open("e.xml", encoding="utf-8") as f:
     data = xmltodict.parse(f.read())
 
-# 频道 id → display-name（自动处理 dict / 多层结构）
-def get_display_name(raw):
+# 统一把 dict 的 title / display-name 转成字符串
+def normalize_text(raw):
     if isinstance(raw, str):
         return raw
     if isinstance(raw, dict):
-        # 常见结构： {"#text": "江苏卫视"}
+        # 常见格式 {"#text": "xxx"}
         if "#text" in raw:
             return raw["#text"]
-        # 多语言结构： {"lang": "zh", "text": "江苏卫视"}
+        # {"text": "xxx"}
         if "text" in raw:
             return raw["text"]
         # 兜底：取第一个值
         return list(raw.values())[0]
     return str(raw)
 
+# 频道 id → display-name
 channel_name = {}
 for c in data["tv"]["channel"]:
     cid = c["@id"]
     raw_name = c["display-name"]
-    name = get_display_name(raw_name)
+    name = normalize_text(raw_name)
     channel_name[cid] = name
 
 epg = {}
 
-# 节目单：按 display-name + 日期 分组
+# 节目单
 for p in data["tv"]["programme"]:
     cid = p["@channel"]
-    ch_name = channel_name.get(cid, cid)  # 始终是字符串
+    ch_name = channel_name.get(cid, cid)
 
     start = p["@start"]
-    date = start[:8]          # YYYYMMDD
-    time = start[8:12]        # HHMM
+    date = start[:8]
+    time = start[8:12]
 
-    title = p["title"]
+    raw_title = p["title"]
+    title = normalize_text(raw_title)
 
     epg.setdefault(ch_name, {}).setdefault(date, []).append({
         "time": time[:2] + ":" + time[2:],
