@@ -1,0 +1,61 @@
+# 唯一的流水线文件：定时抓取 -> 去广告/改名 -> 打包 -> 发布到 epg 分支
+# 无需配置任何密钥，使用内置的 GITHUB_TOKEN（permissions: contents: write）
+name: EPG
+
+on:
+  schedule:
+    # GitHub Actions 的 cron 按 UTC：04:00 / 16:00 UTC = 北京 12:00 / 00:00
+    - cron: '0 4,16 * * *'
+  workflow_dispatch:            # 可在 Actions 页面手动 Run workflow
+  push:
+    branches: [main]
+    paths-ignore:
+      - README.md
+      - LICENSE
+      - .gitignore
+
+permissions:
+  contents: write
+
+concurrency:
+  group: epg-build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      # build_epg.py 只用 Python 3 标准库，runner 自带 python3，无需 setup-python / pip
+      - name: Build
+        run: |
+          set -e
+          python3 scripts/build_epg.py --out-dir out
+          gzip -t out/epg.xml.gz
+          test -s out/meta.json
+          cat out/meta.json
+
+      # 每次新建孤儿仓库并 force push：epg 分支永远只有 1 个 commit，仓库不膨胀。
+      # 构建失败时本步不会执行，旧成品保持可用。
+      - name: Publish to epg branch
+        env:
+          TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -e
+          WORK=$(mktemp -d)
+          cd "$WORK"
+          git init -q
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          cp "$GITHUB_WORKSPACE/out/epg.xml.gz" "$GITHUB_WORKSPACE/out/meta.json" .
+          git add epg.xml.gz meta.json
+          git commit -q -m "EPG $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git remote add origin "https://x-access-token:${TOKEN}@github.com/${REPO}.git"
+          if ! git push -q --force origin HEAD:refs/heads/epg > push.log 2>&1; then
+            sed "s/${TOKEN}/***/g" push.log
+            exit 1
+          fi
+          echo "已发布：https://raw.githubusercontent.com/${REPO}/epg/epg.xml.gz"
