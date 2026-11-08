@@ -1,4 +1,4 @@
-# 唯一的流水线文件：定时抓取 -> 去广告/改名 -> 打包 -> 发布到 epg 分支
+# 唯一的流水线文件：分别抓取 1day/3days/9days -> 去广告/改名 -> 发布到 epg 分支
 # 无需配置任何密钥，使用内置的 GITHUB_TOKEN（permissions: contents: write）
 name: EPG
 
@@ -29,13 +29,22 @@ jobs:
       - uses: actions/checkout@v4
 
       # build_epg.py 只用 Python 3 标准库，runner 自带 python3，无需 setup-python / pip
-      - name: Build
+      # 三个源共用同一套去广告与改名规则，各自输出 <name>.xml.gz + <name>.meta.json
+      - name: Build 1day / 3days / 9days
         run: |
           set -e
-          python3 scripts/build_epg.py --out-dir out
-          gzip -t out/epg.xml.gz
-          test -s out/meta.json
-          cat out/meta.json
+          for d in 1day 3days 9days; do
+            echo "===== $d ====="
+            python3 scripts/build_epg.py \
+              --source-url "https://epg.136605.xyz/${d}.xml.gz" \
+              --name "$d" --out-dir out
+            gzip -t "out/${d}.xml.gz"
+            test -s "out/${d}.meta.json"
+            cat "out/${d}.meta.json"
+          done
+          # 兼容旧订阅地址：epg.xml.gz / meta.json 继续等于 9days
+          cp out/9days.xml.gz out/epg.xml.gz
+          cp out/9days.meta.json out/meta.json
 
       # 每次新建孤儿仓库并 force push：epg 分支永远只有 1 个 commit，仓库不膨胀。
       # 构建失败时本步不会执行，旧成品保持可用。
@@ -50,12 +59,20 @@ jobs:
           git init -q
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          cp "$GITHUB_WORKSPACE/out/epg.xml.gz" "$GITHUB_WORKSPACE/out/meta.json" .
-          git add epg.xml.gz meta.json
-          git commit -q -m "EPG $(date -u '+%Y-%m-%d %H:%M UTC')"
+          # 只复制 8 个成品，不把下载缓存带进仓库
+          cp "$GITHUB_WORKSPACE/out/1day.xml.gz" \
+             "$GITHUB_WORKSPACE/out/3days.xml.gz" \
+             "$GITHUB_WORKSPACE/out/9days.xml.gz" \
+             "$GITHUB_WORKSPACE/out/epg.xml.gz" \
+             "$GITHUB_WORKSPACE/out/1day.meta.json" \
+             "$GITHUB_WORKSPACE/out/3days.meta.json" \
+             "$GITHUB_WORKSPACE/out/9days.meta.json" \
+             "$GITHUB_WORKSPACE/out/meta.json" .
+          git add -A
+          git commit -q -m "EPG 1day/3days/9days $(date -u '+%Y-%m-%d %H:%M UTC')"
           git remote add origin "https://x-access-token:${TOKEN}@github.com/${REPO}.git"
           if ! git push -q --force origin HEAD:refs/heads/epg > push.log 2>&1; then
             sed "s/${TOKEN}/***/g" push.log
             exit 1
           fi
-          echo "已发布：https://raw.githubusercontent.com/${REPO}/epg/epg.xml.gz"
+          echo "已发布 1day / 3days / 9days（epg.xml.gz 为 9days 别名）"
