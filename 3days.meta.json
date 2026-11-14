@@ -1,0 +1,15 @@
+{
+  "name": "3days",
+  "built_at": "2026-11-14 19:03:45 +0800",
+  "source": "https://epg.136605.xyz/3days.xml.gz",
+  "channels": 577,
+  "renamed": 577,
+  "programmes_kept": 34451,
+  "programmes_dropped": 2087,
+  "ad_titles": 1179,
+  "tiny_slots": 908,
+  "bad_refs": 0,
+  "elapsed_sec": 0.47,
+  "sha256": "4b6f378274a3fbf467a1e7c6388da4b899bb49d6a51746342cab715ba51317d9",
+  "gz_bytes": 414522
+}

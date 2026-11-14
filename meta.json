@@ -1,0 +1,15 @@
+{
+  "name": "9days",
+  "built_at": "2026-11-14 19:03:47 +0800",
+  "source": "https://epg.136605.xyz/9days.xml.gz",
+  "channels": 638,
+  "renamed": 637,
+  "programmes_kept": 121130,
+  "programmes_dropped": 8427,
+  "ad_titles": 6343,
+  "tiny_slots": 2084,
+  "bad_refs": 0,
+  "elapsed_sec": 1.54,
+  "sha256": "3ab5e070f6988ed99a0224ab8fbd7def98b478b546e551215a2a92396c4cf106",
+  "gz_bytes": 1281629
+}
