@@ -1,0 +1,15 @@
+{
+  "name": "1day",
+  "built_at": "2026-11-28 07:48:37 +0800",
+  "source": "https://epg.136605.xyz/1day.xml.gz",
+  "channels": 586,
+  "renamed": 586,
+  "programmes_kept": 19809,
+  "programmes_dropped": 1523,
+  "ad_titles": 1032,
+  "tiny_slots": 491,
+  "bad_refs": 0,
+  "elapsed_sec": 0.3,
+  "sha256": "9af570812db57e47d4f00e58bcda567e5a306b75875d89969cc6197c9033d3e9",
+  "gz_bytes": 283067
+}
